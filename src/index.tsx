@@ -155,6 +155,22 @@ app.get("/widgets.json", (c) => {
 				},
 			],
 		},
+		price_history: {
+			name: "Price History",
+			description: "Get the price history of a market on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/market_price_history",
+			type: "chart",
+			params: [
+				{
+					paramName: "market",
+					description: "The id of the market to get price history for",
+					type: "text",
+					value:
+						"92013558332325676522644286533005478701382407428245344466165291954930219735076",
+				},
+			],
+		},
 	});
 });
 

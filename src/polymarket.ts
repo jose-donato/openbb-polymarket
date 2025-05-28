@@ -1,5 +1,49 @@
 import { Hono } from "hono";
 
+const formatNumber = (num: number | string | undefined | null): string => {
+	if (num === undefined || num === null) {
+		return "0";
+	}
+	const value = typeof num === "string" ? Number.parseFloat(num) : num;
+	if (Number.isNaN(value)) {
+		return "0";
+	}
+	return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+};
+
+const formatDate = (dateStr: string | undefined | null): string => {
+	if (!dateStr) {
+		return "Not specified";
+	}
+	const date = new Date(dateStr);
+	if (Number.isNaN(date.getTime())) {
+		return "Invalid date";
+	}
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		timeZoneName: "short",
+	});
+};
+
+const formatPercentage = (value: number | undefined | null): string => {
+	if (value === undefined || value === null || Number.isNaN(value)) {
+		return "0%";
+	}
+	return `${(value * 100).toFixed(1)}%`;
+};
+
+const formatChangePercentage = (value: number | undefined | null): string => {
+	if (value === undefined || value === null || Number.isNaN(value)) {
+		return "0%";
+	}
+	const sign = value >= 0 ? "+" : "";
+	return `${sign}${(value * 100).toFixed(2)}%`;
+};
+
 const polymarket = new Hono();
 
 type MarketEvent = {
@@ -287,6 +331,27 @@ type DetailedEvent = {
 	deploying: boolean;
 };
 
+type PriceHistoryResponse = {
+	history: Array<{
+		t: number; // Unix timestamp
+		p: number; // Price between 0-1
+	}>;
+};
+
+const parseClobTokenIds = (
+	clobTokenIds: string,
+): { yes?: string; no?: string } => {
+	try {
+		const parsed = JSON.parse(clobTokenIds) as string[];
+		return {
+			yes: parsed[0],
+			no: parsed[1],
+		};
+	} catch {
+		return {};
+	}
+};
+
 polymarket.get("/search_events", async (c) => {
 	const { query, status } = c.req.query();
 
@@ -412,22 +477,7 @@ polymarket.get("/market_details", async (c) => {
 
 	const outcomes = JSON.parse(market.outcomes) as string[];
 	const prices = JSON.parse(market.outcomePrices) as string[];
-
-	const formatNumber = (num: number | string): string => {
-		const value = typeof num === "string" ? Number.parseFloat(num) : num;
-		return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
-	};
-
-	const formatDate = (dateStr: string): string => {
-		return new Date(dateStr).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-			timeZoneName: "short",
-		});
-	};
+	const tokenIds = parseClobTokenIds(market.clobTokenIds);
 
 	const markdown = `# ${market.question}
 
@@ -443,6 +493,10 @@ ${market.description}
 
 ## Current Prices
 ${outcomes.map((outcome, i) => `- **${outcome}**: ${(Number.parseFloat(prices[i]) * 100).toFixed(1)}%`).join("\n")}
+
+## Token IDs
+${tokenIds.yes ? `- **Yes Token ID**: ${tokenIds.yes}` : ""}
+${tokenIds.no ? `- **No Token ID**: ${tokenIds.no}` : ""}
 
 ## Trading Information
 - **Last Trade Price**: ${(market.lastTradePrice * 100).toFixed(1)}%
@@ -489,31 +543,6 @@ polymarket.get("/event_details", async (c) => {
 
 	const event = (await response.json()) as DetailedEvent;
 
-	const formatNumber = (num: number | string): string => {
-		const value = typeof num === "string" ? Number.parseFloat(num) : num;
-		return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
-	};
-
-	const formatDate = (dateStr: string): string => {
-		return new Date(dateStr).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-			timeZoneName: "short",
-		});
-	};
-
-	const formatPercentage = (value: number): string => {
-		return (value * 100).toFixed(1) + "%";
-	};
-
-	const formatChangePercentage = (value: number): string => {
-		const sign = value >= 0 ? "+" : "";
-		return sign + (value * 100).toFixed(2) + "%";
-	};
-
 	// Sort markets by volume (highest first)
 	const sortedMarkets = [...event.markets].sort(
 		(a, b) => b.volumeNum - a.volumeNum,
@@ -543,12 +572,13 @@ ${event.description}
 
 ## Markets
 
-| # | Question | Outcomes & Odds | Last Trade | Volume | 24h Volume | Liquidity | Spread | Market ID |
-|---|----------|-----------------|------------|--------|------------|-----------|--------|-----------|
+| # | Question | Outcomes & Odds | Token IDs | Last Trade | Volume | 24h Volume | Liquidity | Spread | Market ID |
+|---|----------|-----------------|-----------|------------|--------|------------|-----------|--------|-----------|
 ${sortedMarkets
 	.map((market, index) => {
-		const outcomes = JSON.parse(market.outcomes) as string[];
-		const prices = JSON.parse(market.outcomePrices) as string[];
+		const outcomes = JSON.parse(market.outcomes ?? "[]") as string[];
+		const prices = JSON.parse(market.outcomePrices ?? "[]") as string[];
+		const tokenIds = parseClobTokenIds(market.clobTokenIds);
 
 		const outcomesText = outcomes
 			.map(
@@ -557,7 +587,9 @@ ${sortedMarkets
 			)
 			.join("<br>");
 
-		return `| ${index + 1} | ${market.question} | ${outcomesText} | ${formatPercentage(market.lastTradePrice)} | $${formatNumber(market.volumeNum)} | $${formatNumber(market.volume24hr)} | $${formatNumber(market.liquidityNum)} | ${formatPercentage(market.spread)} | ${market.id} |`;
+		const tokenIdsText = `Yes: ${tokenIds.yes || "N/A"}<br>No: ${tokenIds.no || "N/A"}`;
+
+		return `| ${index + 1} | ${market.question} | ${outcomesText} | ${tokenIdsText} | ${formatPercentage(market.lastTradePrice)} | $${formatNumber(market.volumeNum)} | $${formatNumber(market.volume24hr)} | $${formatNumber(market.liquidityNum)} | ${formatPercentage(market.spread)} | ${market.id} |`;
 	})
 	.join("\n")}
 
@@ -574,6 +606,78 @@ ${sortedMarkets
 
 	c.header("Content-Type", "text/markdown");
 	return c.text(markdown);
+});
+
+polymarket.get("/market_price_history", async (c) => {
+	const { market, interval = "all", fidelity = "720" } = c.req.query();
+
+	if (!market) {
+		return c.json({ error: "Market ID is required" }, 400);
+	}
+
+	const marketIds = market.split(",");
+
+	// Fetch price history for each market in parallel
+	const marketDataPromises = marketIds.map((marketId) =>
+		fetch(
+			`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
+		).then((response) => {
+			if (!response.ok) {
+				throw new Error(`Failed to fetch price history for market ${marketId}`);
+			}
+			return response.json() as Promise<PriceHistoryResponse>;
+		}),
+	);
+
+	try {
+		const marketDataResults = await Promise.all(marketDataPromises);
+
+		// Create a trace for each market
+		const traces = marketDataResults.map((data, index) => {
+			const marketId = marketIds[index];
+			return {
+				x: data.history.map((point) => new Date(point.t * 1000).toISOString()),
+				y: data.history.map((point) => point.p * 100),
+				type: "scatter",
+				mode: "lines",
+				name: `Market ${marketId}`,
+				line: {
+					width: 2,
+				},
+			};
+		});
+
+		// Return Plotly-compatible JSON
+		const plotlyData = {
+			data: traces,
+			layout: {
+				xaxis: {
+					title: "Date",
+					type: "date",
+				},
+				yaxis: {
+					title: "Price (%)",
+					range: [0, 100],
+					ticksuffix: "%",
+				},
+				margin: {
+					l: 60,
+					r: 30,
+					t: 50,
+					b: 50,
+				},
+				hovermode: "x unified",
+				showlegend: false,
+			},
+		};
+
+		return c.json(plotlyData);
+	} catch (error) {
+		return c.json(
+			{ error: "Failed to fetch price history for one or more markets" },
+			500,
+		);
+	}
 });
 
 export default polymarket;
