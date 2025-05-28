@@ -87,6 +87,12 @@ app.get("/widgets.json", (c) => {
 						{ label: "Ended", value: "resolved" },
 					],
 				},
+				{
+					paramName: "tag",
+					description: "The tag to filter the markets by",
+					type: "text",
+					value: "100389",
+				},
 			],
 		},
 		top_markets: {
@@ -110,6 +116,42 @@ app.get("/widgets.json", (c) => {
 						{ label: "Active", value: "active" },
 						{ label: "Ended", value: "resolved" },
 					],
+				},
+				{
+					paramName: "tag",
+					description: "The tag to filter the markets by",
+					type: "text",
+					value: "100389",
+				},
+			],
+		},
+		market_details: {
+			name: "Market Details",
+			description: "Get the details of a market on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/market_details",
+			type: "markdown",
+			params: [
+				{
+					paramName: "id",
+					description: "The id of the market to get details for",
+					type: "number",
+					value: 507300,
+				},
+			],
+		},
+		event_details: {
+			name: "Event Details",
+			description: "Get the details of an event on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/event_details",
+			type: "markdown",
+			params: [
+				{
+					paramName: "id",
+					description: "The id of the event to get details for",
+					type: "number",
+					value: 19694,
 				},
 			],
 		},
