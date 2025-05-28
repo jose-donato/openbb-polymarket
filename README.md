@@ -20,6 +20,11 @@ Pass the `CloudflareBindings` as generics when instantiation `Hono`:
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 ```
 
+
+https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=500&order=volume&ascending=false
+https://gamma-api.polymarket.com/markets/507300
+https://gamma-api.polymarket.com/events/19694
+
 https://polymarket.com/api/tags/filteredBySlug?tag=all&status=active
 https://gamma-api.polymarket.com/events/pagination?limit=20&active=true&archived=false&closed=false&order=volume24hr&ascending=false&offset=0
 https://clob.polymarket.com/rewards/markets/0xf2a89afeddff5315e37211b0b0e4e93ed167fba2694cd35c252672d0aca73711
