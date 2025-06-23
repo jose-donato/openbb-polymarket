@@ -19,6 +19,7 @@ app.get("/", (c) => {
 	return c.render(
 		<html>
 			<head>
+				<title>Polymarket App for OpenBB Workspace</title>
 				<meta charset="UTF-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
