@@ -36,13 +36,6 @@ const formatPercentage = (value: number | undefined | null): string => {
 	return `${(value * 100).toFixed(1)}%`;
 };
 
-const formatChangePercentage = (value: number | undefined | null): string => {
-	if (value === undefined || value === null || Number.isNaN(value)) {
-		return "0%";
-	}
-	const sign = value >= 0 ? "+" : "";
-	return `${sign}${(value * 100).toFixed(2)}%`;
-};
 
 const polymarket = new Hono();
 
@@ -350,6 +343,46 @@ type TrendingTag = {
 	updatedAt?: string;
 };
 
+type CommentProfile = {
+	name?: string;
+	pseudonym: string;
+	displayUsernamePublic: boolean;
+	bio?: string;
+	proxyWallet: string;
+	baseAddress: string;
+	profileImage?: string;
+	positions?: Array<{
+		tokenId: string;
+		positionSize: string;
+	}>;
+};
+
+type CommentReaction = {
+	id: string;
+	commentID: number;
+	reactionType: string;
+	userAddress: string;
+	profile: {
+		proxyWallet: string;
+	};
+};
+
+type Comment = {
+	id: string;
+	body: string;
+	parentEntityType: string;
+	parentEntityID: number;
+	parentCommentID?: string;
+	userAddress: string;
+	replyAddress?: string;
+	createdAt: string;
+	updatedAt: string;
+	profile: CommentProfile;
+	reactions?: CommentReaction[];
+	reportCount: number;
+	reactionCount: number;
+};
+
 const parseClobTokenIds = (
 	clobTokenIds: string,
 ): { yes?: string; no?: string } => {
@@ -381,7 +414,7 @@ polymarket.get("/search_events", async (c) => {
 
 	return c.json(
 		data.events.map((event) => ({
-			id: `${event.id}‎`, // temp hack so it doesnt convert to number
+			id: event.id,
 			title: event.title,
 			active: !event.closed,
 			markets: event.markets
@@ -408,7 +441,7 @@ polymarket.get("/search_tags", async (c) => {
 
 	return c.json(
 		data.tags.map((tag) => ({
-			id: `${tag.id}‎`, // temp hack so it doesnt convert to number
+			id: tag.id,
 			label: tag.label,
 			slug: tag.slug,
 			event_count: tag.event_count,
@@ -432,7 +465,7 @@ polymarket.get("/top_events", async (c) => {
 
 	return c.json(
 		data.map((event) => ({
-			id: `${event.id}‎`, // temp hack so it doesnt convert to number
+			id: event.id,
 			title: event.title,
 			active: !event.closed,
 			markets: event.markets
@@ -462,7 +495,7 @@ polymarket.get("/top_markets", async (c) => {
 
 	return c.json(
 		data.map((market) => ({
-			id: `${market.id}‎`, // temp hack so it doesnt convert to number
+			id: market.id,
 			question: market.question,
 			volume: market.volume,
 			liquidity: market.liquidity,
@@ -629,38 +662,20 @@ polymarket.get("/market_price_history", async (c) => {
 
 	const marketIds = market.split(",");
 
-	// Fetch both price history and market details for each market in parallel
+	// Fetch price history for each market in parallel
 	const marketDataPromises = marketIds.map(async (marketId) => {
-		const [priceHistoryResponse, marketDetailsResponse] = await Promise.all([
-			fetch(
-				`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
-			),
-			fetch(`https://gamma-api.polymarket.com/markets/${marketId}`),
-		]);
+		const priceHistoryResponse = await fetch(
+			`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
+		);
 
 		if (!priceHistoryResponse.ok) {
 			throw new Error(`Failed to fetch price history for market ${marketId}`);
 		}
 
 		const priceHistory = await priceHistoryResponse.json() as PriceHistoryResponse;
-		
-		// Market details might fail (market might not exist), so we handle it gracefully
-		let marketName = `Market ${marketId}`;
-		console.log(await marketDetailsResponse.text())
-		if (marketDetailsResponse.ok) {
-			try {
-				const marketDetails = await marketDetailsResponse.json() as DetailedMarket;
-				marketName = marketDetails.question;
-				console.log(marketDetails)
-			} catch (error) {
-				console.error(error);
-				// If parsing fails, keep the default name
-			}
-		}
 
 		return {
 			marketId,
-			marketName,
 			priceHistory,
 		};
 	});
@@ -675,7 +690,7 @@ polymarket.get("/market_price_history", async (c) => {
 				y: data.priceHistory.history.map((point) => point.p * 100),
 				type: "scatter",
 				mode: "lines",
-				name: data.marketName,
+				name: `Market ${data.marketId}`,
 				line: {
 					width: 2,
 				},
@@ -749,7 +764,7 @@ polymarket.get("/event_markets", async (c) => {
 			});
 
 			return {
-				id: `${market.id}‎`, // temp hack so it doesnt convert to number
+				id: market.id,
 				question: market.question,
 				slug: market.slug,
 				active: market.active,
@@ -795,7 +810,7 @@ polymarket.get("/trending_tags", async (c) => {
 
 	return c.json(
 		data.map((tag) => ({
-			id: `${tag.id}‎`, // temp hack so it doesnt convert to number
+			id: tag.id,
 			label: tag.label,
 			slug: tag.slug,
 			createdAt: formatDate(tag.createdAt),
@@ -951,7 +966,7 @@ polymarket.get("/home_cards", async (c) => {
 
 	return c.json(
 		data.data.map((event) => ({
-			id: `${event.id}‎`, // temp hack so it doesnt convert to number
+			id: event.id,
 			title: event.title,
 			slug: event.slug,
 			active: !event.closed,
@@ -970,6 +985,52 @@ polymarket.get("/home_cards", async (c) => {
 			startDate: event.startDate,
 			endDate: event.endDate,
 			url: event.url,
+		})),
+	);
+});
+
+polymarket.get("/event_comments", async (c) => {
+	const { 
+		id, 
+		limit = "40", 
+		offset = "0", 
+		holders_only = "false", 
+		order = "createdAt" 
+	} = c.req.query();
+
+	if (!id) {
+		return c.json({ error: "Event ID is required" }, 400);
+	}
+
+	const url = `https://gamma-api.polymarket.com/comments?get_positions=true&get_reports=true&parent_entity_type=Event&parent_entity_id=${id}&ascending=false&holders_only=${holders_only}&order=${order}&limit=${limit}&offset=${offset}`;
+
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		return c.json({ error: "Failed to fetch event comments" }, 500);
+	}
+
+	const comments = (await response.json()) as Comment[];
+
+	return c.json(
+		comments.map((comment) => ({
+			body: comment.body,
+			authorName: comment.profile.name || comment.profile.pseudonym,
+			authorPseudonym: comment.profile.pseudonym,
+			authorAddress: comment.userAddress,
+			authorBio: comment.profile.bio,
+			createdAt: formatDate(comment.createdAt),
+			reactionCount: comment.reactionCount,
+			reportCount: comment.reportCount,
+			reactions: comment.reactions?.map((reaction) => ({
+				type: reaction.reactionType,
+				userAddress: reaction.userAddress,
+			})) || [],
+			positions: comment.profile.positions?.map((position) => ({
+				tokenId: position.tokenId,
+				positionSize: formatNumber(Number.parseFloat(position.positionSize) / 1e6), // Convert from wei-like format
+			})) || [],
+			hasPositions: (comment.profile.positions?.length || 0) > 0,
 		})),
 	);
 });

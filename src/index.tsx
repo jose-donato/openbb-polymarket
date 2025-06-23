@@ -233,6 +233,52 @@ app.get("/widgets.json", (c) => {
 				},
 			],
 		},
+		event_comments: {
+			name: "Event Comments",
+			description: "Get user comments for a specific event on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/event_comments",
+			params: [
+				{
+					paramName: "id",
+					description: "The id of the event to get comments for",
+					type: "number",
+					value: 16111,
+				},
+				{
+					paramName: "limit",
+					description: "The number of comments to return",
+					type: "number",
+					value: 40,
+				},
+				{
+					paramName: "offset",
+					description: "The offset for pagination",
+					type: "number",
+					value: 0,
+				},
+				{
+					paramName: "holders_only",
+					description: "Show only comments from token holders",
+					type: "text",
+					value: "false",
+					options: [
+						{ label: "All Users", value: "false" },
+						{ label: "Holders Only", value: "true" },
+					],
+				},
+				{
+					paramName: "order",
+					description: "Order comments by",
+					type: "text",
+					value: "createdAt",
+					options: [
+						{ label: "Created Date", value: "createdAt" },
+						{ label: "Reaction Count", value: "reactionCount" },
+					],
+				},
+			],
+		},
 	});
 });
 
