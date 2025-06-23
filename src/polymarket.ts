@@ -338,6 +338,18 @@ type PriceHistoryResponse = {
 	}>;
 };
 
+type TrendingTag = {
+	id: string;
+	label: string;
+	slug: string;
+	forceShow?: boolean;
+	forceHide?: boolean;
+	publishedAt?: string;
+	updatedBy?: number;
+	createdAt: string;
+	updatedAt?: string;
+};
+
 const parseClobTokenIds = (
 	clobTokenIds: string,
 ): { yes?: string; no?: string } => {
@@ -617,30 +629,53 @@ polymarket.get("/market_price_history", async (c) => {
 
 	const marketIds = market.split(",");
 
-	// Fetch price history for each market in parallel
-	const marketDataPromises = marketIds.map((marketId) =>
-		fetch(
-			`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
-		).then((response) => {
-			if (!response.ok) {
-				throw new Error(`Failed to fetch price history for market ${marketId}`);
+	// Fetch both price history and market details for each market in parallel
+	const marketDataPromises = marketIds.map(async (marketId) => {
+		const [priceHistoryResponse, marketDetailsResponse] = await Promise.all([
+			fetch(
+				`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
+			),
+			fetch(`https://gamma-api.polymarket.com/markets/${marketId}`),
+		]);
+
+		if (!priceHistoryResponse.ok) {
+			throw new Error(`Failed to fetch price history for market ${marketId}`);
+		}
+
+		const priceHistory = await priceHistoryResponse.json() as PriceHistoryResponse;
+		
+		// Market details might fail (market might not exist), so we handle it gracefully
+		let marketName = `Market ${marketId}`;
+		console.log(await marketDetailsResponse.text())
+		if (marketDetailsResponse.ok) {
+			try {
+				const marketDetails = await marketDetailsResponse.json() as DetailedMarket;
+				marketName = marketDetails.question;
+				console.log(marketDetails)
+			} catch (error) {
+				console.error(error);
+				// If parsing fails, keep the default name
 			}
-			return response.json() as Promise<PriceHistoryResponse>;
-		}),
-	);
+		}
+
+		return {
+			marketId,
+			marketName,
+			priceHistory,
+		};
+	});
 
 	try {
 		const marketDataResults = await Promise.all(marketDataPromises);
 
 		// Create a trace for each market
-		const traces = marketDataResults.map((data, index) => {
-			const marketId = marketIds[index];
+		const traces = marketDataResults.map((data) => {
 			return {
-				x: data.history.map((point) => new Date(point.t * 1000).toISOString()),
-				y: data.history.map((point) => point.p * 100),
+				x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
+				y: data.priceHistory.history.map((point) => point.p * 100),
 				type: "scatter",
 				mode: "lines",
-				name: `Market ${marketId}`,
+				name: data.marketName,
 				line: {
 					width: 2,
 				},
@@ -743,6 +778,28 @@ polymarket.get("/event_markets", async (c) => {
 				groupItemTitle: market.groupItemTitle,
 			};
 		}),
+	);
+});
+
+polymarket.get("/trending_tags", async (c) => {
+	const response = await fetch(
+		"https://polymarket.com/api/tags/filteredBySlug?tag=all&status=active",
+	);
+
+	if (!response.ok) {
+		return c.json({ error: "Failed to fetch trending tags" }, 500);
+	}
+
+	const data = (await response.json()) as TrendingTag[];
+
+
+	return c.json(
+		data.map((tag) => ({
+			id: `${tag.id}‎`, // temp hack so it doesnt convert to number
+			label: tag.label,
+			slug: tag.slug,
+			createdAt: formatDate(tag.createdAt),
+		})),
 	);
 });
 

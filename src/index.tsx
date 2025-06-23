@@ -186,6 +186,12 @@ app.get("/widgets.json", (c) => {
 				},
 			],
 		},
+		trending_tags: {
+			name: "Trending Tags",
+			description: "Get the trending tags on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/trending_tags",
+		},
 	});
 });
 
