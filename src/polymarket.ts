@@ -40,25 +40,25 @@ const formatPercentage = (value: number | undefined | null): string => {
 const polymarket = new Hono();
 
 type MarketEvent = {
-	slug: string; // e.g., "10-yr-treasury-yield-above-3-by-june-30"
-	question: string; // e.g., "10 Yr Treasury yield above 3% by June 30?"
-	groupItemTitle: string; // ?
-	outcomes: string[]; // e.g., ["Yes", "No"]
-	outcomePrices: string[]; // e.g., [0.9, 0.1]
-	lastTradePrice: number; // e.g., 0.9
-	bestAsk: number; // e.g., 0.91
-	bestBid: number; // e.g., 0.9
-	spread: number; // e.g., 0.01
-	closed: boolean; // e.g., false
-	archived: boolean; // e.g., false
+	slug: string;
+	question: string;
+	groupItemTitle: string;
+	outcomes: string[];
+	outcomePrices: string[];
+	lastTradePrice: number;
+	bestAsk: number;
+	bestBid: number;
+	spread: number;
+	closed: boolean;
+	archived: boolean;
 };
 
 type Market = {
-	id: string; // e.g., "13907"
-	slug: string; // e.g., "10-yr-treasury-yield-above-3-by-june-30"
-	question: string; // e.g., "10 Yr Treasury yield above 3% by June 30?"
-	outcomes: string; // e.g., '["Yes", "No"]'
-	outcomePrices: string; // e.g., '[0.9, 0.1]'
+	id: string;
+	slug: string;
+	question: string;
+	outcomes: string;
+	outcomePrices: string;
 	volume: string;
 	liquidity: string;
 	volume24hr: string;
@@ -158,22 +158,22 @@ type DetailedMarket = {
 };
 
 type Event = {
-	id: string; // e.g., "13907"
-	url: string; // e.g., "https://polymarket.com/event/10-yr-treasury-yield-above-3-by-june-30"
-	title: string; // e.g., "10 Yr Treasury yield above 3% by June 30"
-	slug: string; // e.g., "10-yr-treasury-yield-above-3-by-june-30"
-	closed: boolean; // e.g., false
-	startDate: string; // e.g., "2023-12-27T21:00:00.000Z"
-	endDate: string; // e.g., "2024-06-30T21:00:00Z"
+	id: string;
+	url: string;
+	title: string;
+	slug: string;
+	closed: boolean;
+	startDate: string;
+	endDate: string;
 	markets: MarketEvent[];
-	ended: boolean; // e.g., false
+	ended: boolean;
 };
 
 type Tag = {
-	id: string; // e.g., 102028
-	label: string; // e.g., "Treasuries"
-	slug: string; // e.g., "treasuries"
-	event_count: number; // e.g., 3
+	id: string;
+	label: string;
+	slug: string;
+	event_count: number;
 };
 
 type DetailedEvent = {
@@ -326,8 +326,8 @@ type DetailedEvent = {
 
 type PriceHistoryResponse = {
 	history: Array<{
-		t: number; // Unix timestamp
-		p: number; // Price between 0-1
+		t: number;
+		p: number;
 	}>;
 };
 
@@ -588,7 +588,6 @@ polymarket.get("/event_details", async (c) => {
 
 	const event = (await response.json()) as DetailedEvent;
 
-	// Sort markets by volume (highest first)
 	const sortedMarkets = [...event.markets].sort(
 		(a, b) => b.volumeNum - a.volumeNum,
 	);
@@ -662,7 +661,6 @@ polymarket.get("/market_price_history", async (c) => {
 
 	const marketIds = market.split(",");
 
-	// Fetch price history for each market in parallel
 	const marketDataPromises = marketIds.map(async (marketId) => {
 		const priceHistoryResponse = await fetch(
 			`https://clob.polymarket.com/prices-history?interval=${interval}&market=${marketId}&fidelity=${fidelity}`,
@@ -683,7 +681,6 @@ polymarket.get("/market_price_history", async (c) => {
 	try {
 		const marketDataResults = await Promise.all(marketDataPromises);
 
-		// Create a trace for each market
 		const traces = marketDataResults.map((data) => {
 			return {
 				x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
@@ -697,7 +694,6 @@ polymarket.get("/market_price_history", async (c) => {
 			};
 		});
 
-		// Return Plotly-compatible JSON
 		const plotlyData = {
 			data: traces,
 			layout: {
@@ -745,7 +741,6 @@ polymarket.get("/event_markets", async (c) => {
 
 	const event = (await response.json()) as DetailedEvent;
 
-	// Sort markets by volume (highest first)
 	const sortedMarkets = [...event.markets].sort(
 		(a, b) => b.volumeNum - a.volumeNum,
 	);
@@ -756,7 +751,6 @@ polymarket.get("/event_markets", async (c) => {
 			const prices = JSON.parse(market.outcomePrices ?? "[]") as string[];
 			const tokenIds = parseClobTokenIds(market.clobTokenIds);
 
-			// Create outcome-specific properties
 			const outcomeData: Record<string, number> = {};
 			outcomes.forEach((outcome, index) => {
 				const key = outcome.toLowerCase().replace(/\s+/g, '_');
@@ -769,7 +763,7 @@ polymarket.get("/event_markets", async (c) => {
 				slug: market.slug,
 				active: market.active,
 				outcomes,
-				...outcomeData, // Spread the outcome-specific prices
+				...outcomeData,
 				tokenIds,
 				lastTradePrice: market.lastTradePrice,
 				bestBid: market.bestBid,
@@ -825,7 +819,6 @@ polymarket.get("/event_price_history", async (c) => {
 		return c.json({ error: "Event ID is required" }, 400);
 	}
 
-	// First, get the event details to access all markets
 	const eventResponse = await fetch(`https://gamma-api.polymarket.com/events/${id}`);
 
 	if (!eventResponse.ok) {
@@ -834,11 +827,9 @@ polymarket.get("/event_price_history", async (c) => {
 
 	const event = (await eventResponse.json()) as DetailedEvent;
 
-	// Get price history for all markets' "Yes" tokens
 	const marketDataPromises = event.markets.map(async (market) => {
 		const tokenIds = parseClobTokenIds(market.clobTokenIds);
 		
-		// Use the "Yes" token ID (first token)
 		const yesTokenId = tokenIds.yes;
 		
 		if (!yesTokenId) {
@@ -881,7 +872,6 @@ polymarket.get("/event_price_history", async (c) => {
 	try {
 		const marketDataResults = await Promise.all(marketDataPromises);
 
-		// Filter out markets with no price history and create traces
 		const traces = marketDataResults
 			.filter((data) => data.priceHistory.history.length > 0)
 			.map((data) => {
@@ -900,9 +890,8 @@ polymarket.get("/event_price_history", async (c) => {
 					latestPrice,
 				};
 			})
-			.sort((a, b) => b.latestPrice - a.latestPrice); // Sort by latest price, highest to lowest
+			.sort((a, b) => b.latestPrice - a.latestPrice);
 
-		// Return Plotly-compatible JSON
 		const plotlyData = {
 			data: traces,
 			layout: {
@@ -1028,7 +1017,7 @@ polymarket.get("/event_comments", async (c) => {
 			})) || [],
 			positions: comment.profile.positions?.map((position) => ({
 				tokenId: position.tokenId,
-				positionSize: formatNumber(Number.parseFloat(position.positionSize) / 1e6), // Convert from wei-like format
+				positionSize: formatNumber(Number.parseFloat(position.positionSize) / 1e6),
 			})) || [],
 			hasPositions: (comment.profile.positions?.length || 0) > 0,
 		})),

@@ -16,7 +16,51 @@ app.use(
 );
 
 app.get("/", (c) => {
-	return c.render(<h1>Hello!</h1>);
+	return c.render(
+		<html>
+			<head>
+				<meta charset="UTF-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+				<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+			</head>
+			<body>
+				<div class="flex min-h-screen flex-col items-center justify-center bg-white py-6">
+					<div style="display: flex; flex-direction: column; align-items: center;"
+						class="container max-w-3xl px-4 flex flex-col items-center">
+						<div class="flex items-center gap-2 text-xl font-bold text-gray-900 mb-6">
+							<img src="https://upload.wikimedia.org/wikipedia/commons/7/75/Company_Logo_Polymarket.png" alt="Polymarket" class="h-20 w-auto" />
+						</div>
+
+						<div class="text-center space-y-4 mb-8">
+							<h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+								Polymarket Backend for OpenBB Workspace
+							</h1>
+						</div>
+
+						<p class="text-sm text-gray-600 text-center mb-6">Created by <a href="https://x.com/josedonato__" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">@josedonato__</a></p>
+
+						<div class="bg-gray-50 rounded-lg p-6 w-full max-w-2xl">
+							<h2 class="text-lg font-semibold text-gray-900 mb-4">How to Add to OpenBB Workspace</h2>
+							<ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+								<li>Log in to your OpenBB Pro account at <a href="https://pro.openbb.co" class="text-blue-600 hover:underline">pro.openbb.co</a></li>
+								<li>Navigate to the <strong>Apps</strong> page</li>
+								<li>Click the <strong>Connect backend</strong> button</li>
+								<li>Fill in the following details:
+									<ul class="list-disc list-inside ml-4 mt-1 space-y-1">
+										<li><strong>Name</strong>: Polymarket Backend</li>
+										<li><strong>URL</strong>: <code>https://openbb-polymarket.jose-donato.workers.dev/</code></li>
+									</ul>
+								</li>
+								<li>Click the <strong>Test</strong> button to verify the connection</li>
+								<li>If the test is successful, click the <strong>Add</strong> button</li>
+							</ol>
+							<p class="text-sm text-gray-600 mt-4">Once added, you'll find Polymarket app available in the Apps section of OpenBB Workspace.</p>
+						</div>
+					</div>
+				</div>
+			</body>
+		</html>
+	);
 });
 
 app.get("/widgets.json", (c) => {
