@@ -803,4 +803,122 @@ polymarket.get("/trending_tags", async (c) => {
 	);
 });
 
+polymarket.get("/event_price_history", async (c) => {
+	const { id, interval = "all", fidelity = "720" } = c.req.query();
+
+	if (!id) {
+		return c.json({ error: "Event ID is required" }, 400);
+	}
+
+	// First, get the event details to access all markets
+	const eventResponse = await fetch(`https://gamma-api.polymarket.com/events/${id}`);
+
+	if (!eventResponse.ok) {
+		return c.json({ error: "Event not found" }, 404);
+	}
+
+	const event = (await eventResponse.json()) as DetailedEvent;
+
+	// Get price history for all markets' "Yes" tokens
+	const marketDataPromises = event.markets.map(async (market) => {
+		const tokenIds = parseClobTokenIds(market.clobTokenIds);
+		
+		// Use the "Yes" token ID (first token)
+		const yesTokenId = tokenIds.yes;
+		
+		if (!yesTokenId) {
+			return {
+				marketId: market.id,
+				marketName: market.question,
+				priceHistory: { history: [] },
+			};
+		}
+
+		try {
+			const priceHistoryResponse = await fetch(
+				`https://clob.polymarket.com/prices-history?interval=${interval}&market=${yesTokenId}&fidelity=${fidelity}`,
+			);
+
+			if (!priceHistoryResponse.ok) {
+				return {
+					marketId: market.id,
+					marketName: market.question,
+					priceHistory: { history: [] },
+				};
+			}
+
+			const priceHistory = await priceHistoryResponse.json() as PriceHistoryResponse;
+
+			return {
+				marketId: market.id,
+				marketName: market.question,
+				priceHistory,
+			};
+		} catch (error) {
+			return {
+				marketId: market.id,
+				marketName: market.question,
+				priceHistory: { history: [] },
+			};
+		}
+	});
+
+	try {
+		const marketDataResults = await Promise.all(marketDataPromises);
+
+		// Filter out markets with no price history and create traces
+		const traces = marketDataResults
+			.filter((data) => data.priceHistory.history.length > 0)
+			.map((data) => {
+				const yValues = data.priceHistory.history.map((point) => point.p * 100);
+				const latestPrice = yValues[yValues.length - 1] || 0;
+				
+				return {
+					x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
+					y: yValues,
+					type: "scatter",
+					mode: "lines",
+					name: data.marketName,
+					line: {
+						width: 2,
+					},
+					latestPrice,
+				};
+			})
+			.sort((a, b) => b.latestPrice - a.latestPrice); // Sort by latest price, highest to lowest
+
+		// Return Plotly-compatible JSON
+		const plotlyData = {
+			data: traces,
+			layout: {
+				title: `${event.title} - Market Price History (Yes Outcomes)`,
+				xaxis: {
+					title: "Date",
+					type: "date",
+				},
+				yaxis: {
+					title: "Price (%)",
+					range: [0, 100],
+					ticksuffix: "%",
+				},
+				margin: {
+					l: 60,
+					r: 30,
+					t: 80,
+					b: 50,
+				},
+				hovermode: "x unified",
+				showlegend: true,
+			},
+		};
+
+		return c.json(plotlyData);
+	} catch (error) {
+		return c.json(
+			{ error: "Failed to fetch price history for event markets" },
+			500,
+		);
+	}
+});
+
 export default polymarket;

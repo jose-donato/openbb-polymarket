@@ -186,6 +186,21 @@ app.get("/widgets.json", (c) => {
 				},
 			],
 		},
+		event_price_history: {
+			name: "Event Price History",
+			description: "Get the price history of all markets in an event on Polymarket (Yes outcomes)",
+			source: "Polymarket",
+			endpoint: "/polymarket/event_price_history",
+			type: "chart",
+			params: [
+				{
+					paramName: "id",
+					description: "The id of the event to get price history for all markets",
+					type: "number",
+					value: 19694,
+				},
+			],
+		},
 		trending_tags: {
 			name: "Trending Tags",
 			description: "Get the trending tags on Polymarket",
