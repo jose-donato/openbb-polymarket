@@ -207,6 +207,32 @@ app.get("/widgets.json", (c) => {
 			source: "Polymarket",
 			endpoint: "/polymarket/trending_tags",
 		},
+		home_cards: {
+			name: "Home Cards",
+			description: "Get featured events for the home page on Polymarket (ordered by 24hr volume)",
+			source: "Polymarket",
+			endpoint: "/polymarket/home_cards",
+			params: [
+				{
+					paramName: "limit",
+					description: "The number of events to return",
+					type: "number",
+					value: 20,
+				},
+				{
+					paramName: "offset",
+					description: "The offset for pagination",
+					type: "number",
+					value: 0,
+				},
+				{
+					paramName: "tag_id",
+					description: "Optional tag ID to filter the events",
+					type: "text",
+					value: "",
+				},
+			],
+		},
 	});
 });
 

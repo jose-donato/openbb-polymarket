@@ -921,4 +921,57 @@ polymarket.get("/event_price_history", async (c) => {
 	}
 });
 
+polymarket.get("/home_cards", async (c) => {
+	const { limit = "20", offset = "0", tag_id } = c.req.query();
+
+	let url = `https://gamma-api.polymarket.com/events/pagination?limit=${limit}&active=true&archived=false&closed=false&order=volume24hr&ascending=false&offset=${offset}`;
+	
+	if (tag_id && tag_id.trim() !== "") {
+		url += `&tag_id=${tag_id}`;
+	}
+
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		return c.json({ error: "Failed to fetch home cards" }, 500);
+	}
+
+	const data = (await response.json()) as {
+		data: (Event & {
+			volume: number;
+			liquidity: number;
+			volume24hr: number;
+			volume1w: number;
+			volume1mo: number;
+			volume1yr: number;
+		})[];
+		count: number;
+		next_cursor: string | null;
+	};
+
+	return c.json(
+		data.data.map((event) => ({
+			id: `${event.id}‎`, // temp hack so it doesnt convert to number
+			title: event.title,
+			slug: event.slug,
+			active: !event.closed,
+			markets: event.markets
+				.map(
+					(market) =>
+						`${market.slug}: ${Array.isArray(market.outcomes) ? market.outcomes.map((outcome, i) => `${outcome}(${market.outcomePrices[i]})`).join("/") : ""}`,
+				)
+				.join("\n"),
+			volume: event.volume,
+			liquidity: event.liquidity,
+			volume24hr: event.volume24hr,
+			volume1w: event.volume1w,
+			volume1mo: event.volume1mo,
+			volume1yr: event.volume1yr,
+			startDate: event.startDate,
+			endDate: event.endDate,
+			url: event.url,
+		})),
+	);
+});
+
 export default polymarket;
