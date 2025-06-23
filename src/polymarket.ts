@@ -680,4 +680,70 @@ polymarket.get("/market_price_history", async (c) => {
 	}
 });
 
+polymarket.get("/event_markets", async (c) => {
+	const { id } = c.req.query();
+
+	if (!id) {
+		return c.json({ error: "Event ID is required" }, 400);
+	}
+
+	const response = await fetch(`https://gamma-api.polymarket.com/events/${id}`);
+
+	if (!response.ok) {
+		return c.json({ error: "Event not found" }, 404);
+	}
+
+	const event = (await response.json()) as DetailedEvent;
+
+	// Sort markets by volume (highest first)
+	const sortedMarkets = [...event.markets].sort(
+		(a, b) => b.volumeNum - a.volumeNum,
+	);
+
+	return c.json(
+		sortedMarkets.map((market) => {
+			const outcomes = JSON.parse(market.outcomes ?? "[]") as string[];
+			const prices = JSON.parse(market.outcomePrices ?? "[]") as string[];
+			const tokenIds = parseClobTokenIds(market.clobTokenIds);
+
+			// Create outcome-specific properties
+			const outcomeData: Record<string, number> = {};
+			outcomes.forEach((outcome, index) => {
+				const key = outcome.toLowerCase().replace(/\s+/g, '_');
+				outcomeData[key] = Number.parseFloat(prices[index] || "0");
+			});
+
+			return {
+				id: `${market.id}‎`, // temp hack so it doesnt convert to number
+				question: market.question,
+				slug: market.slug,
+				active: market.active,
+				outcomes,
+				...outcomeData, // Spread the outcome-specific prices
+				tokenIds,
+				lastTradePrice: market.lastTradePrice,
+				bestBid: market.bestBid,
+				bestAsk: market.bestAsk,
+				spread: market.spread,
+				volume: market.volumeNum,
+				liquidity: market.liquidityNum,
+				volume24hr: market.volume24hr,
+				volume1wk: market.volume1wk,
+				volume1mo: market.volume1mo,
+				volume1yr: market.volume1yr,
+				oneDayPriceChange: market.oneDayPriceChange,
+				oneWeekPriceChange: market.oneWeekPriceChange,
+				oneMonthPriceChange: market.oneMonthPriceChange,
+				endDate: market.endDate,
+				createdAt: market.createdAt,
+				description: market.description,
+				resolutionSource: market.resolutionSource,
+				acceptingOrders: market.acceptingOrders,
+				orderMinSize: market.orderMinSize,
+				groupItemTitle: market.groupItemTitle,
+			};
+		}),
+	);
+});
+
 export default polymarket;

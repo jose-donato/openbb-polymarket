@@ -155,6 +155,20 @@ app.get("/widgets.json", (c) => {
 				},
 			],
 		},
+		event_markets: {
+			name: "Event Markets",
+			description: "Get the markets of an event on Polymarket",
+			source: "Polymarket",
+			endpoint: "/polymarket/event_markets",
+			params: [
+				{
+					paramName: "id",
+					description: "The id of the event to get markets for",
+					type: "number",
+					value: 19694,
+				},
+			],
+		},
 		price_history: {
 			name: "Price History",
 			description: "Get the price history of a market on Polymarket",
@@ -166,6 +180,7 @@ app.get("/widgets.json", (c) => {
 					paramName: "market",
 					description: "The id of the market to get price history for",
 					type: "text",
+					multiple: true,
 					value:
 						"92013558332325676522644286533005478701382407428245344466165291954930219735076",
 				},
