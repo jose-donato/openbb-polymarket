@@ -8,12 +8,24 @@ const app = new Hono();
 
 app.use(renderer);
 
+const allowedOrigins = [
+  "https://pro.openbb.co",
+  "https://excel.openbb.co",
+];
+
 app.use(
-	cors({
-		origin: "https://pro.openbb.co",
-		allowHeaders: ["Content-Type", "Authorization"],
-		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-	}),
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true, // if needed for cookies/auth headers
+  })
 );
 
 app.get("/", (c) => {
