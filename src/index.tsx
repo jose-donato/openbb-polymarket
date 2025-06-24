@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { html } from 'hono/html'
 import { cors } from "hono/cors";
 import polymarket from "./polymarket";
 import { renderer } from "./renderer";
@@ -16,13 +17,34 @@ app.use(
 );
 
 app.get("/", (c) => {
-	return c.render(
+	return c.html(
 		<html>
 			<head>
 				<title>Polymarket App for OpenBB Workspace</title>
 				<meta charset="UTF-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+				{html`
+          <script>
+					function copyUrl() {
+						const url = 'https://openbb-polymarket.jose-donato.workers.dev';
+						navigator.clipboard.writeText(url).then(() => {
+							const copyIcon = document.getElementById('copyIcon');
+							const checkIcon = document.getElementById('checkIcon');
+							const btn = document.getElementById('copyUrlBtn');
+							
+							copyIcon.classList.add('hidden');
+							checkIcon.classList.remove('hidden');
+							btn.classList.add('text-green-400');
+							
+							setTimeout(() => {
+								copyIcon.classList.remove('hidden');
+								checkIcon.classList.add('hidden');
+								btn.classList.remove('text-green-400');
+							}, 2000);
+						});
+					}
+				</script>`}
 			</head>
 			<body>
 				<div class="flex min-h-screen flex-col items-center justify-center bg-gray-900 py-6">
@@ -43,19 +65,38 @@ app.get("/", (c) => {
 						<div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
 							<h2 class="text-lg font-semibold text-white mb-4">How to Add to OpenBB Workspace</h2>
 							<ol class="list-decimal list-inside space-y-2 text-sm text-gray-300">
-								<li>Log in to your OpenBB Pro account at <a href="https://pro.openbb.co" class="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">pro.openbb.co</a></li>
+								<li>Log in to your OpenBB account at <a href="https://pro.openbb.co" class="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">pro.openbb.co</a></li>
 								<li>Navigate to the <strong>Apps</strong> page</li>
 								<li>Click the <strong>Connect backend</strong> button</li>
 								<li>Fill in the following details:
 									<ul class="list-disc list-inside ml-4 mt-1 space-y-1">
-										<li><strong>Name</strong>: Polymarket Backend</li>
-										<li><strong>URL</strong>: <code class="bg-gray-700 text-gray-200 px-2 py-1 rounded">https://openbb-polymarket.jose-donato.workers.dev/</code></li>
+										<li>
+											<strong>Name</strong>: Polymarket Backend
+										</li>
+										<li>
+											<strong>URL</strong>:
+											<span class="inline-flex items-center gap-2">
+												<code class="ml-1 bg-gray-700 text-gray-200 px-1 py-0.5 rounded">https://openbb-polymarket.jose-donato.workers.dev</code>
+												<button
+													id="copyUrlBtn"
+													class="text-gray-400 hover:text-white transition-colors duration-200"
+													onclick="copyUrl()"
+												>
+													<svg id="copyIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+													</svg>
+													<svg id="checkIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+													</svg>
+												</button>
+											</span>
+										</li>
 									</ul>
 								</li>
-								<li>Click the <strong>Test</strong> button to verify the connection</li>
-								<li>If the test is successful, click the <strong>Add</strong> button</li>
+								<li>Click <strong>Test</strong> to verify the connection</li>
+								<li>If the test is successful, click <strong>Add</strong></li>
 							</ol>
-							<p class="text-sm text-gray-300 mt-4">Once added, you'll find Polymarket app available in the Apps section of OpenBB Workspace.</p>
+							<p class="text-sm text-gray-300 mt-4">Once added, you'll find Polymarket app available in the Apps section of OpenBB Workspace. All the widgets will also be available in search to add to your dashboards.</p>
 						</div>
 
 						<div class="flex justify-center mt-6">
