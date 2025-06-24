@@ -410,8 +410,6 @@ polymarket.get("/search_events", async (c) => {
 		hasMore: boolean;
 	};
 
-	console.log(data);
-
 	return c.json(
 		data.events.map((event) => ({
 			id: event.id,
@@ -653,11 +651,19 @@ ${sortedMarkets
 });
 
 polymarket.get("/market_price_history", async (c) => {
-	const { market, interval = "all", fidelity = "720" } = c.req.query();
+	const { market, interval = "all", fidelity = "720", theme = "dark" } = c.req.query();
 
 	if (!market) {
 		return c.json({ error: "Market ID is required" }, 400);
 	}
+
+	// Set theme colors
+	const bgColor = theme === 'dark' ? '#151518' : '#FFFFFF';
+	const textColor = theme === 'dark' ? '#FFFFFF' : '#000000';
+	const gridColor = theme === 'dark' ? '#444444' : '#E0E0E0';
+	const lineColors = theme === 'dark' 
+		? ['#00D4FF', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'] 
+		: ['#007BFF', '#DC3545', '#28A745', '#FFC107', '#6F42C1', '#FD7E14'];
 
 	const marketIds = market.split(",");
 
@@ -681,7 +687,7 @@ polymarket.get("/market_price_history", async (c) => {
 	try {
 		const marketDataResults = await Promise.all(marketDataPromises);
 
-		const traces = marketDataResults.map((data) => {
+		const traces = marketDataResults.map((data, index) => {
 			return {
 				x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
 				y: data.priceHistory.history.map((point) => point.p * 100),
@@ -690,6 +696,7 @@ polymarket.get("/market_price_history", async (c) => {
 				name: `Market ${data.marketId}`,
 				line: {
 					width: 2,
+					color: lineColors[index % lineColors.length],
 				},
 			};
 		});
@@ -697,14 +704,25 @@ polymarket.get("/market_price_history", async (c) => {
 		const plotlyData = {
 			data: traces,
 			layout: {
+				plot_bgcolor: bgColor,
+				paper_bgcolor: bgColor,
+				font: {
+					color: textColor,
+				},
 				xaxis: {
 					title: "Date",
 					type: "date",
+					gridcolor: gridColor,
+					tickfont: { color: textColor },
+					titlefont: { color: textColor },
 				},
 				yaxis: {
 					title: "Price (%)",
 					range: [0, 100],
 					ticksuffix: "%",
+					gridcolor: gridColor,
+					tickfont: { color: textColor },
+					titlefont: { color: textColor },
 				},
 				margin: {
 					l: 60,
@@ -813,11 +831,19 @@ polymarket.get("/trending_tags", async (c) => {
 });
 
 polymarket.get("/event_price_history", async (c) => {
-	const { id, interval = "all", fidelity = "720" } = c.req.query();
+	const { id, interval = "all", fidelity = "720", theme = "dark" } = c.req.query();
 
 	if (!id) {
 		return c.json({ error: "Event ID is required" }, 400);
 	}
+
+	// Set theme colors
+	const bgColor = theme === 'dark' ? '#151518' : '#FFFFFF';
+	const textColor = theme === 'dark' ? '#FFFFFF' : '#000000';
+	const gridColor = theme === 'dark' ? '#444444' : '#E0E0E0';
+	const lineColors = theme === 'dark' 
+		? ['#00D4FF', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F0E68C', '#FFA07A', '#98FB98'] 
+		: ['#007BFF', '#DC3545', '#28A745', '#FFC107', '#6F42C1', '#FD7E14', '#E83E8C', '#20C997', '#6610F2', '#17A2B8'];
 
 	const eventResponse = await fetch(`https://gamma-api.polymarket.com/events/${id}`);
 
@@ -874,7 +900,7 @@ polymarket.get("/event_price_history", async (c) => {
 
 		const traces = marketDataResults
 			.filter((data) => data.priceHistory.history.length > 0)
-			.map((data) => {
+			.map((data, index) => {
 				const yValues = data.priceHistory.history.map((point) => point.p * 100);
 				const latestPrice = yValues[yValues.length - 1] || 0;
 				
@@ -886,6 +912,7 @@ polymarket.get("/event_price_history", async (c) => {
 					name: data.marketName,
 					line: {
 						width: 2,
+						color: lineColors[index % lineColors.length],
 					},
 					latestPrice,
 				};
@@ -895,15 +922,29 @@ polymarket.get("/event_price_history", async (c) => {
 		const plotlyData = {
 			data: traces,
 			layout: {
-				title: `${event.title} - Market Price History (Yes Outcomes)`,
+				title: {
+					text: `${event.title} - Market Price History (Yes Outcomes)`,
+					font: { color: textColor },
+				},
+				plot_bgcolor: bgColor,
+				paper_bgcolor: bgColor,
+				font: {
+					color: textColor,
+				},
 				xaxis: {
 					title: "Date",
 					type: "date",
+					gridcolor: gridColor,
+					tickfont: { color: textColor },
+					titlefont: { color: textColor },
 				},
 				yaxis: {
 					title: "Price (%)",
 					range: [0, 100],
 					ticksuffix: "%",
+					gridcolor: gridColor,
+					tickfont: { color: textColor },
+					titlefont: { color: textColor },
 				},
 				margin: {
 					l: 60,
@@ -913,6 +954,10 @@ polymarket.get("/event_price_history", async (c) => {
 				},
 				hovermode: "x unified",
 				showlegend: true,
+				legend: {
+					font: { color: textColor },
+					bgcolor: 'rgba(0,0,0,0)',
+				},
 			},
 		};
 

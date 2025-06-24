@@ -1,6 +1,6 @@
 # Polymarket App for OpenBB Workspace
 
-This is an OpenBB Workspace app that connects to the Polymarket API, enabling the integration of prediction market data. It defines templates and widgets for visualizing Polymarket events, markets, price history, and analytics within the OpenBB Workspace interface.
+An OpenBB Workspace app that connects to the Polymarket API, enabling the integration of prediction market data. It defines widgets for visualizing Polymarket events, markets, price history, and analytics within the OpenBB Workspace interface.
 
 ## Connecting to OpenBB Workspace
 
