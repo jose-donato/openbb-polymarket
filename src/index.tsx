@@ -56,7 +56,7 @@ app.get("/", (c) => {
 
 						<div class="text-center space-y-4 mb-8">
 							<h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-								Polymarket Backend for OpenBB Workspace
+								Polymarket App for OpenBB Workspace
 							</h1>
 						</div>
 
