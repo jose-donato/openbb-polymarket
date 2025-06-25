@@ -9,11 +9,11 @@ const app = new Hono();
 app.use(renderer);
 
 app.use(
-	cors({
-		origin: "https://pro.openbb.co",
-		allowHeaders: ["Content-Type", "Authorization"],
-		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-	}),
+  cors({
+    origin: ["https://pro.openbb.co", "https://excel.openbb.co"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
 );
 
 app.get("/", (c) => {
