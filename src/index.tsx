@@ -8,20 +8,9 @@ const app = new Hono();
 
 app.use(renderer);
 
-const allowedOrigins = [
-  "https://pro.openbb.co",
-  "https://excel.openbb.co",
-];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: ["https://pro.openbb.co", "https://excel.openbb.co"],
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true, // if needed for cookies/auth headers
