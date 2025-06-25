@@ -36,7 +36,6 @@ const formatPercentage = (value: number | undefined | null): string => {
 	return `${(value * 100).toFixed(1)}%`;
 };
 
-
 const polymarket = new Hono();
 
 type MarketEvent = {
@@ -383,6 +382,34 @@ type Comment = {
 	reactionCount: number;
 };
 
+type UserPosition = {
+	proxyWallet: string;
+	asset: string;
+	conditionId: string;
+	size: number;
+	avgPrice: number;
+	initialValue: number;
+	currentValue: number;
+	cashPnl: number;
+	percentPnl: number;
+	totalBought: number;
+	realizedPnl: number;
+	percentRealizedPnl: number;
+	curPrice: number;
+	redeemable: boolean;
+	mergeable: boolean;
+	title: string;
+	slug: string;
+	icon: string;
+	eventSlug: string;
+	outcome: string;
+	outcomeIndex: number;
+	oppositeOutcome: string;
+	oppositeAsset: string;
+	endDate: string;
+	negativeRisk: boolean;
+};
+
 const parseClobTokenIds = (
 	clobTokenIds: string,
 ): { yes?: string; no?: string } => {
@@ -651,19 +678,25 @@ ${sortedMarkets
 });
 
 polymarket.get("/market_price_history", async (c) => {
-	const { market, interval = "all", fidelity = "720", theme = "dark" } = c.req.query();
+	const {
+		market,
+		interval = "all",
+		fidelity = "720",
+		theme = "dark",
+	} = c.req.query();
 
 	if (!market) {
 		return c.json({ error: "Market ID is required" }, 400);
 	}
 
 	// Set theme colors
-	const bgColor = theme === 'dark' ? '#151518' : '#FFFFFF';
-	const textColor = theme === 'dark' ? '#FFFFFF' : '#000000';
-	const gridColor = theme === 'dark' ? '#444444' : '#E0E0E0';
-	const lineColors = theme === 'dark' 
-		? ['#00D4FF', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'] 
-		: ['#007BFF', '#DC3545', '#28A745', '#FFC107', '#6F42C1', '#FD7E14'];
+	const bgColor = theme === "dark" ? "#151518" : "#FFFFFF";
+	const textColor = theme === "dark" ? "#FFFFFF" : "#000000";
+	const gridColor = theme === "dark" ? "#444444" : "#E0E0E0";
+	const lineColors =
+		theme === "dark"
+			? ["#00D4FF", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
+			: ["#007BFF", "#DC3545", "#28A745", "#FFC107", "#6F42C1", "#FD7E14"];
 
 	const marketIds = market.split(",");
 
@@ -676,7 +709,8 @@ polymarket.get("/market_price_history", async (c) => {
 			throw new Error(`Failed to fetch price history for market ${marketId}`);
 		}
 
-		const priceHistory = await priceHistoryResponse.json() as PriceHistoryResponse;
+		const priceHistory =
+			(await priceHistoryResponse.json()) as PriceHistoryResponse;
 
 		return {
 			marketId,
@@ -689,7 +723,9 @@ polymarket.get("/market_price_history", async (c) => {
 
 		const traces = marketDataResults.map((data, index) => {
 			return {
-				x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
+				x: data.priceHistory.history.map((point) =>
+					new Date(point.t * 1000).toISOString(),
+				),
 				y: data.priceHistory.history.map((point) => point.p * 100),
 				type: "scatter",
 				mode: "lines",
@@ -771,7 +807,7 @@ polymarket.get("/event_markets", async (c) => {
 
 			const outcomeData: Record<string, number> = {};
 			outcomes.forEach((outcome, index) => {
-				const key = outcome.toLowerCase().replace(/\s+/g, '_');
+				const key = outcome.toLowerCase().replace(/\s+/g, "_");
 				outcomeData[key] = Number.parseFloat(prices[index] || "0");
 			});
 
@@ -819,7 +855,6 @@ polymarket.get("/trending_tags", async (c) => {
 
 	const data = (await response.json()) as TrendingTag[];
 
-
 	return c.json(
 		data.map((tag) => ({
 			id: tag.id,
@@ -831,21 +866,51 @@ polymarket.get("/trending_tags", async (c) => {
 });
 
 polymarket.get("/event_price_history", async (c) => {
-	const { id, interval = "all", fidelity = "720", theme = "dark" } = c.req.query();
+	const {
+		id,
+		interval = "all",
+		fidelity = "720",
+		theme = "dark",
+	} = c.req.query();
 
 	if (!id) {
 		return c.json({ error: "Event ID is required" }, 400);
 	}
 
 	// Set theme colors
-	const bgColor = theme === 'dark' ? '#151518' : '#FFFFFF';
-	const textColor = theme === 'dark' ? '#FFFFFF' : '#000000';
-	const gridColor = theme === 'dark' ? '#444444' : '#E0E0E0';
-	const lineColors = theme === 'dark' 
-		? ['#00D4FF', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F0E68C', '#FFA07A', '#98FB98'] 
-		: ['#007BFF', '#DC3545', '#28A745', '#FFC107', '#6F42C1', '#FD7E14', '#E83E8C', '#20C997', '#6610F2', '#17A2B8'];
+	const bgColor = theme === "dark" ? "#151518" : "#FFFFFF";
+	const textColor = theme === "dark" ? "#FFFFFF" : "#000000";
+	const gridColor = theme === "dark" ? "#444444" : "#E0E0E0";
+	const lineColors =
+		theme === "dark"
+			? [
+					"#00D4FF",
+					"#FF6B6B",
+					"#4ECDC4",
+					"#45B7D1",
+					"#96CEB4",
+					"#FFEAA7",
+					"#DDA0DD",
+					"#F0E68C",
+					"#FFA07A",
+					"#98FB98",
+				]
+			: [
+					"#007BFF",
+					"#DC3545",
+					"#28A745",
+					"#FFC107",
+					"#6F42C1",
+					"#FD7E14",
+					"#E83E8C",
+					"#20C997",
+					"#6610F2",
+					"#17A2B8",
+				];
 
-	const eventResponse = await fetch(`https://gamma-api.polymarket.com/events/${id}`);
+	const eventResponse = await fetch(
+		`https://gamma-api.polymarket.com/events/${id}`,
+	);
 
 	if (!eventResponse.ok) {
 		return c.json({ error: "Event not found" }, 404);
@@ -855,9 +920,9 @@ polymarket.get("/event_price_history", async (c) => {
 
 	const marketDataPromises = event.markets.map(async (market) => {
 		const tokenIds = parseClobTokenIds(market.clobTokenIds);
-		
+
 		const yesTokenId = tokenIds.yes;
-		
+
 		if (!yesTokenId) {
 			return {
 				marketId: market.id,
@@ -879,7 +944,8 @@ polymarket.get("/event_price_history", async (c) => {
 				};
 			}
 
-			const priceHistory = await priceHistoryResponse.json() as PriceHistoryResponse;
+			const priceHistory =
+				(await priceHistoryResponse.json()) as PriceHistoryResponse;
 
 			return {
 				marketId: market.id,
@@ -903,9 +969,11 @@ polymarket.get("/event_price_history", async (c) => {
 			.map((data, index) => {
 				const yValues = data.priceHistory.history.map((point) => point.p * 100);
 				const latestPrice = yValues[yValues.length - 1] || 0;
-				
+
 				return {
-					x: data.priceHistory.history.map((point) => new Date(point.t * 1000).toISOString()),
+					x: data.priceHistory.history.map((point) =>
+						new Date(point.t * 1000).toISOString(),
+					),
 					y: yValues,
 					type: "scatter",
 					mode: "lines",
@@ -956,7 +1024,7 @@ polymarket.get("/event_price_history", async (c) => {
 				showlegend: true,
 				legend: {
 					font: { color: textColor },
-					bgcolor: 'rgba(0,0,0,0)',
+					bgcolor: "rgba(0,0,0,0)",
 				},
 			},
 		};
@@ -974,7 +1042,7 @@ polymarket.get("/home_cards", async (c) => {
 	const { limit = "20", offset = "0", tag_id } = c.req.query();
 
 	let url = `https://gamma-api.polymarket.com/events/pagination?limit=${limit}&active=true&archived=false&closed=false&order=volume24hr&ascending=false&offset=${offset}`;
-	
+
 	if (tag_id && tag_id.trim() !== "") {
 		url += `&tag_id=${tag_id}`;
 	}
@@ -1024,12 +1092,12 @@ polymarket.get("/home_cards", async (c) => {
 });
 
 polymarket.get("/event_comments", async (c) => {
-	const { 
-		id, 
-		limit = "40", 
-		offset = "0", 
-		holders_only = "false", 
-		order = "createdAt" 
+	const {
+		id,
+		limit = "40",
+		offset = "0",
+		holders_only = "false",
+		order = "createdAt",
 	} = c.req.query();
 
 	if (!id) {
@@ -1056,15 +1124,56 @@ polymarket.get("/event_comments", async (c) => {
 			createdAt: formatDate(comment.createdAt),
 			reactionCount: comment.reactionCount,
 			reportCount: comment.reportCount,
-			reactions: comment.reactions?.map((reaction) => ({
-				type: reaction.reactionType,
-				userAddress: reaction.userAddress,
-			})) || [],
-			positions: comment.profile.positions?.map((position) => ({
-				tokenId: position.tokenId,
-				positionSize: formatNumber(Number.parseFloat(position.positionSize) / 1e6),
-			})) || [],
+			reactions:
+				comment.reactions?.map((reaction) => ({
+					type: reaction.reactionType,
+					userAddress: reaction.userAddress,
+				})) || [],
+			positions:
+				comment.profile.positions?.map((position) => ({
+					tokenId: position.tokenId,
+					positionSize: formatNumber(
+						Number.parseFloat(position.positionSize) / 1e6,
+					),
+				})) || [],
 			hasPositions: (comment.profile.positions?.length || 0) > 0,
+		})),
+	);
+});
+
+polymarket.get("/user_positions", async (c) => {
+	const {
+		user,
+		sortBy = "CURRENT",
+		sortDirection = "DESC",
+		sizeThreshold = "0.1",
+		limit = "50",
+		offset = "0",
+	} = c.req.query();
+
+	if (!user) {
+		return c.json({ error: "User address is required" }, 400);
+	}
+
+	const url = `https://data-api.polymarket.com/positions?user=${user}&sortBy=${sortBy}&sortDirection=${sortDirection}&sizeThreshold=${sizeThreshold}&limit=${limit}&offset=${offset}`;
+
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		return c.json({ error: "Failed to fetch user positions" }, 500);
+	}
+
+	const positions = (await response.json()) as UserPosition[];
+
+	return c.json(
+		positions.map((position) => ({
+			title: position.title,
+			size: formatNumber(position.size),
+			average: formatPercentage(position.avgPrice),
+			current: formatPercentage(position.curPrice),
+			value: formatNumber(position.currentValue),
+			pnl: position.cashPnl,
+			pnl_percent: position.percentPnl,
 		})),
 	);
 });
