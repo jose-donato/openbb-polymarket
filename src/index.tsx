@@ -13,7 +13,6 @@ app.use(
     origin: ["https://pro.openbb.co", "https://excel.openbb.co"],
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true, // if needed for cookies/auth headers
   })
 );
 
