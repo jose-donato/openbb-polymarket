@@ -10,9 +10,13 @@ app.use(renderer);
 
 app.use(
 	cors({
-		origin: ["https://pro.openbb.co", "https://excel.openbb.co"],
-		allowedHeaders: ["Content-Type", "Authorization"],
-		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		origin: [
+			"http://localhost:142",
+			"https://pro.openbb.co",
+			"https://excel.openbb.co",
+		],
+		allowHeaders: ["Content-Type", "Authorization"],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	}),
 );
 
@@ -1150,8 +1154,28 @@ app.get("/widgets.json", (c) => {
 			],
 			data: {
 				table: {
-					showAll: true,
 					columnsDefs: [
+						{
+							field: "title",
+							headerName: "Title",
+						},
+						{
+							field: "size",
+							headerName: "Size",
+						},
+						{
+							field: "value",
+							headerName: "Value",
+						},
+						{
+							field: "current",
+							headerName: "Current",
+						},
+						{
+							field: "average_percent",
+							headerName: "Average %",
+							formatterFn: "percent",
+						},
 						{
 							field: "pnl",
 							headerName: "PNL",

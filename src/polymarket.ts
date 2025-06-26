@@ -595,8 +595,8 @@ ${tokenIds.no ? `- **No Token ID**: ${tokenIds.no}` : ""}
 - **Price Tick Size**: ${market.orderPriceMinTickSize}
 
 ## Links
-- **Polymarket URL**: https://polymarket.com/event/${market.slug}
-- **Market Image**: ${market.image}`;
+- [Polymarket URL](https://polymarket.com/event/${market.slug})
+- [Market Image](${market.image})`;
 
 	c.header("Content-Type", "text/markdown");
 	return c.text(markdown);
@@ -670,8 +670,9 @@ ${sortedMarkets
 - **Restricted**: ${event.restricted ? "Yes" : "No"}
 
 ## Links
-- **Polymarket URL**: https://polymarket.com/event/${event.slug}
-- **Event Image**: ${event.image}`;
+- [Polymarket URL](https://polymarket.com/event/${event.slug})
+- [Event Image](${event.image})
+`;
 
 	c.header("Content-Type", "text/markdown");
 	return c.text(markdown);
@@ -1168,10 +1169,10 @@ polymarket.get("/user_positions", async (c) => {
 	return c.json(
 		positions.map((position) => ({
 			title: position.title,
-			size: formatNumber(position.size),
-			average: formatPercentage(position.avgPrice),
-			current: formatPercentage(position.curPrice),
-			value: formatNumber(position.currentValue),
+			size: position.size,
+			average_percent: position.avgPrice,
+			current: position.curPrice,
+			value: position.currentValue,
 			pnl: position.cashPnl,
 			pnl_percent: position.percentPnl,
 		})),
